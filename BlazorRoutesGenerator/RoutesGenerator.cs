@@ -1,0 +1,204 @@
+﻿using BlazorRoutesGenerator;
+using BlazorRoutesGenerator.EqualityComparer;
+using BlazorRoutesGenerator.Extensions;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.CodeAnalysis.Text;
+using System;
+using System.Collections.Generic;
+using System.Collections.Immutable;
+using System.IO;
+using System.Linq;
+using System.Text;
+using System.Text.RegularExpressions;
+using System.Threading;
+
+namespace GeneratedBlazorRoutes
+{
+    [Generator]
+    public class RoutesGenerator : IIncrementalGenerator
+    {
+        private const string _routeAttributeQualifier = "Microsoft.AspNetCore.Components.RouteAttribute";
+        private const string _routeAttributeClassName = "RouteAttribute";
+        private const string _queryAttributeClassName = "SupplyParameterFromQueryAttribute";
+
+        public void Initialize(IncrementalGeneratorInitializationContext context)
+        {
+            IncrementalValueProvider<ImmutableArray<(ClassDeclarationSyntax, ImmutableArray<string>)>> csFileProvider = context.SyntaxProvider.ForAttributeWithMetadataName(
+                fullyQualifiedMetadataName: _routeAttributeQualifier,
+                predicate: (node, _) => node is ClassDeclarationSyntax,
+                transform: (ctx, _) => GetSemanticTargetForGeneration(ctx))
+                .Where(m => m.Item1 != null && m.Item2.Any())
+                .Collect();
+
+            IncrementalValueProvider<ImmutableArray<(ClassDeclarationSyntax, ImmutableArray<string>)>> razorFileProvider = context.AdditionalTextsProvider
+                .Where(file => file.Path.Contains(".razor"))
+                .Select(ParseRazorPageForGeneration)
+                .Where(m => m.Item1 != null && m.Item2.Any())
+                .Collect();
+
+            IncrementalValueProvider<(ImmutableArray<(ClassDeclarationSyntax, ImmutableArray<string>)>, ImmutableArray<(ClassDeclarationSyntax, ImmutableArray<string>)>)> combinedProvider = csFileProvider.Combine(razorFileProvider);
+
+            IncrementalValueProvider<(Compilation, (ImmutableArray<(ClassDeclarationSyntax, ImmutableArray<string>)>, ImmutableArray<(ClassDeclarationSyntax, ImmutableArray<string>)>))> resultProvider = context.CompilationProvider.Combine(combinedProvider);
+            context.RegisterSourceOutput(resultProvider, (spc, source) =>
+            {
+                ImmutableArray<(ClassDeclarationSyntax, ImmutableArray<string>)> values = [.. source.Item2.Item1, .. source.Item2.Item2];
+                Execute(source.Item1, spc, values);
+            });
+        }
+
+        private static (ClassDeclarationSyntax, ImmutableArray<string>) GetSemanticTargetForGeneration(GeneratorAttributeSyntaxContext context)
+        {
+            if (context.TargetNode is not ClassDeclarationSyntax classDeclaration)
+            {
+                return (null, [])!;
+            }
+            
+            ImmutableArray<string> pageRoutes = context.Attributes
+                .Where(attribute => attribute.AttributeClass?.Name == _routeAttributeClassName)
+                .Select(attributeData =>
+                {
+                    TypedConstant routeParameter = attributeData.ConstructorArguments[0];
+                    if (routeParameter.Kind == TypedConstantKind.Primitive)
+                    {
+                        return routeParameter.Value?.ToString() ?? string.Empty;
+                    }
+
+                    return string.Empty;
+                })
+                .Where(routeTemplate => routeTemplate != null)
+                .ToImmutableArray();
+
+            return (classDeclaration, pageRoutes);
+        }
+
+        private static (ClassDeclarationSyntax, ImmutableArray<string>) ParseRazorPageForGeneration(AdditionalText text, CancellationToken ct)
+        {
+            SourceText? content = text.GetText(ct);
+            if (content == null)
+            {
+                return (null, [])!;
+            }
+
+            ImmutableArray<string> routes = content.Lines
+                .Select(line => Regex.Match(line.ToString(), "@page\\s\"(.+?)\"").Groups[1].Value)
+                .Where(route => !string.IsNullOrEmpty(route))
+                .Distinct()
+                .ToImmutableArray();
+
+            string filePath = text.Path.Substring(0, text.Path.LastIndexOf(".razor"));
+            string pathWithOutDrive = filePath.Substring(filePath.IndexOf(Path.VolumeSeparatorChar) + 2);
+
+            return (SyntaxFactory.ClassDeclaration(pathWithOutDrive.Replace(Path.DirectorySeparatorChar, '.')), routes);
+        }
+
+        private static void Execute(Compilation compilation, SourceProductionContext context, ImmutableArray<(ClassDeclarationSyntax, ImmutableArray<string>)> pages)
+        {
+            IEnumerable<PageModel> pageModels = GetPageModels(compilation, context, pages);
+
+            StringBuilder sourceBuilder = new();
+            sourceBuilder.AppendLine("/// <Auto-Generated />");
+            sourceBuilder.AppendLine();
+
+            foreach (PageModel pageModel in pageModels)
+            {
+                sourceBuilder.AppendLine($"/// Page: {pageModel.Name}");
+                
+                foreach (RouteTemplate template in pageModel.RouteTemplates)
+                {
+                    sourceBuilder.Append($"/// Route: {template.Template}");
+                    if (template.Parameters.Any())
+                    {
+                        sourceBuilder.Append($"; {string.Join(", ", template.Parameters.Select(p => $"{p.Key} as {p.Value}"))}");
+                    }
+
+                    sourceBuilder.AppendLine();
+                }
+
+                foreach (KeyValuePair<string, TypeSyntax> queryParam in pageModel.QueryParameters)
+                {
+                    sourceBuilder.AppendLine($"/// Query: {queryParam.Key} as {queryParam.Value}");
+                }
+
+                sourceBuilder.AppendLine();
+            }
+
+            context.AddSource("Routes.g.cs", sourceBuilder.ToString());
+        }
+
+        private static ImmutableArray<PageModel> GetPageModels(Compilation compilation, SourceProductionContext context, ImmutableArray<(ClassDeclarationSyntax, ImmutableArray<string>)> pages)
+        {
+            Dictionary<string, (List<RouteTemplate>, List<KeyValuePair<string, TypeSyntax>>)> pageModels = [];
+            foreach ((ClassDeclarationSyntax classDeclaration, ImmutableArray<string> routes) in pages)
+            {
+                IEnumerable<RouteTemplate> routeTemplates = routes
+                    .Select(route =>
+                    {
+                        try
+                        {
+                            return RouteTemplate.ParseRouteTemplate(route);
+                        }
+                        catch (NotImplementedException)
+                        {
+                            return null!;
+                        }
+                    })
+                    .Where(rt => rt is not null)
+                    .Distinct(RouteTemplateEqualityComparer.Instance);
+
+                IEnumerable<KeyValuePair<string, TypeSyntax>> queryParams = GetQueryParameters(compilation, context, classDeclaration);
+
+                INamedTypeSymbol? symbol = compilation.SyntaxTrees.Contains(classDeclaration.SyntaxTree)
+                    ? compilation.GetSemanticModel(classDeclaration.SyntaxTree).GetDeclaredSymbol(classDeclaration)
+                    : null;
+                string name = symbol is not null
+                    ? symbol.GetFullQualifiedName()
+                    : classDeclaration.Identifier.Text;
+
+                IEnumerable<string> namespaces = name.Split('.');
+
+                int nameIndex = namespaces.ToList().IndexOf(compilation.Assembly.Name);
+                string typeQualifier = string.Join(".", namespaces.Skip(nameIndex));
+
+                if (pageModels.ContainsKey(typeQualifier))
+                {
+                    pageModels[typeQualifier].Item1.AddRange(routeTemplates);
+                    pageModels[typeQualifier].Item2.AddRange(queryParams);
+
+                    continue;
+                }
+
+                pageModels.Add(typeQualifier, (routeTemplates.ToList(), queryParams.ToList()));
+            }
+
+            return pageModels
+                .Select(kv => new PageModel(kv.Key, [.. kv.Value.Item1], kv.Value.Item2.ToImmutableDictionary()))
+                .ToImmutableArray();
+        }
+
+        private static IEnumerable<KeyValuePair<string, TypeSyntax>> GetQueryParameters(Compilation compilation, SourceProductionContext context, ClassDeclarationSyntax classDeclaration)
+        {
+            foreach (PropertyDeclarationSyntax property in classDeclaration.Members.OfType<PropertyDeclarationSyntax>())
+            {
+                IPropertySymbol? symbol = compilation.GetSemanticModel(property.SyntaxTree).GetDeclaredSymbol(property);
+                if (symbol is null)
+                {
+                    continue;
+                }
+
+                AttributeData? queryAttribute = symbol.GetAttributes().FirstOrDefault(attribute => attribute.AttributeClass?.Name == _queryAttributeClassName);
+                if (queryAttribute is not null)
+                {
+                    TypedConstant queryParameter = queryAttribute.NamedArguments.First(kv => kv.Key == "Name").Value;
+                    if (queryParameter.Kind != TypedConstantKind.Primitive || queryParameter.Value is not string queryParamName)
+                    {
+                        continue;
+                    }
+
+                    yield return new KeyValuePair<string, TypeSyntax>(queryParamName, property.Type);
+                }
+            }
+        }
+    }
+}
