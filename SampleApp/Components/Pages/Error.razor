@@ -26,6 +26,9 @@
 </p>
 
 @code{
+    [Parameter]
+    public string Id { get; set; }
+
     [CascadingParameter]
     private HttpContext? HttpContext{ get; set; }
 

@@ -9,6 +9,8 @@ namespace BlazorRoutesGenerator;
 
 internal class RouteTemplate(string template, ImmutableDictionary<string, TypeSyntax> parameters)
 {
+    public static Regex ParametersRegex => new("{([a-zA-Z][a-zA-Z0-9]*)(?::([a-z]+))?}", RegexOptions.Singleline | RegexOptions.Compiled);
+
     public string Template { get; set; } = template;
 
     public ImmutableDictionary<string, TypeSyntax> Parameters { get; set; } = parameters;
@@ -16,7 +18,7 @@ internal class RouteTemplate(string template, ImmutableDictionary<string, TypeSy
     public static RouteTemplate ParseRouteTemplate(string template)
     {
         Dictionary<string, TypeSyntax> parameters = [];
-        foreach (Match match in Regex.Matches(template, "{([a-zA-Z][a-zA-Z0-9]*)(?::([a-z]+))?}"))
+        foreach (Match match in ParametersRegex.Matches(template))
         {
             if (!match.Success)
             {
@@ -24,11 +26,11 @@ internal class RouteTemplate(string template, ImmutableDictionary<string, TypeSy
             }
 
             string name = match.Groups[1].Value;
-            string? typeName = match.Groups[2].Value;
-
-            Type type = typeName switch
+            string typeName = match.Groups[2].Value;
+            
+            Type? type = typeName switch
             {
-                null => typeof(string),
+                "" => typeof(string),
                 "bool" => typeof(bool),
                 "datetime" => typeof(DateTime),
                 "decimal" => typeof(decimal),
@@ -37,10 +39,15 @@ internal class RouteTemplate(string template, ImmutableDictionary<string, TypeSy
                 "guid" => typeof(Guid),
                 "int" => typeof(int),
                 "long" => typeof(long),
-                _ => throw new NotImplementedException()
+                _ => null
             };
-            TypeSyntax typeSyntax = SyntaxFactory.ParseTypeName(type.FullName);
 
+            if (type is null)
+            {
+                continue;
+            }
+
+            TypeSyntax typeSyntax = SyntaxFactory.ParseTypeName(type.FullName);
             parameters.Add(name, typeSyntax);
         }
 
