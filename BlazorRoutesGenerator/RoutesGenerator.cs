@@ -114,98 +114,12 @@ namespace GeneratedBlazorRoutes
                 .AppendLine("\tpublic static class Routes")
                 .AppendLine("\t{");
 
-            IEnumerable<string> allRoutes = pageModels.OrderBy(page => page.Name).SelectMany(page => page.RouteTemplates.OrderBy(route => route.Parameters.Count).Select(route => route.Template));
+            IEnumerable<string> allRoutes = pageModels.SelectMany(page => page.RouteTemplates.OrderBy(route => route.Parameters.Count).Select(route => route.Template));
             BuildAllRoutes(sourceBuilder, allRoutes);
 
             sourceBuilder.AppendLine();
 
-            foreach (PageModel pageModel in pageModels.OrderBy(page => page.Name))
-            {
-                string methodName = pageModel.Name.Split('.').Last();
-
-                int i = pageModels.Count();
-                foreach (RouteTemplate template in pageModel.RouteTemplates.OrderBy(route => route.Parameters.Count))
-                {
-                    IEnumerable<KeyValuePair<string, TypeSyntax>> parameters = template.Parameters.Concat(pageModel.QueryParameters);
-
-                    sourceBuilder.AddMethod("string", methodName, parameters, methodBuilder =>
-                    {
-                        string path = template.Template;
-                        if (template.Parameters.Any())
-                        {
-                            foreach (Match match in RouteTemplate.ParametersRegex.Matches(template.Template))
-                            {
-                                string name = match.Groups[1].Value;
-
-                                string? typeName = null;
-                                if (match.Groups.Count >= 2)
-                                {
-                                    typeName = match.Groups[2].Value;
-                                }
-
-                                path = path.Replace(match.Value, $"{{{name}{GetParameterFormatter(typeName)}}}");
-                            }
-                        }
-
-                        methodBuilder
-                            .Append("\t\t\tstring routePath = ").Append(template.Parameters.Any() ? "$" : string.Empty).Append("\"").Append(path).AppendLine("\";")
-                            .AppendLine();
-
-                        if (pageModel.QueryParameters.Any())
-                        {
-                            methodBuilder
-                                .Append("\t\t\t").Append(IEnumerableKvStringStringType).AppendLine(" queryParameters = new[]")
-                                .Append("\t\t\t{");
-
-                            int i = pageModel.QueryParameters.Count();
-                            foreach (KeyValuePair<string, TypeSyntax> queryParam in pageModel.QueryParameters)
-                            {
-                                methodBuilder
-                                    .AppendLine()
-                                    .Append("\t\t\t\tnew ").Append(KvStringStringType).Append("(\"").Append(queryParam.Key).Append("\", ").Append(queryParam.Key);
-
-                                if (queryParam.Value is NullableTypeSyntax)
-                                {
-                                    methodBuilder.Append("?");
-                                }
-                                methodBuilder.Append(".ToString())");
-
-                                if (i > 1)
-                                {
-                                    methodBuilder.Append(",");
-                                }
-
-                                i--;
-                            }
-                            methodBuilder
-                                .AppendLine()
-                                .AppendLine("\t\t\t};")
-                                .Append("\t\t\t").Append(QueryStringType).Append(" queryString = ").Append(QueryStringType).AppendLine(".Create(queryParameters.Where(p => p.Value != null));")
-                                .AppendLine("\t\t\tif (queryString.HasValue)")
-                                .AppendLine("\t\t\t{")
-                                .AppendLine("\t\t\t\troutePath += queryString.Value;")
-                                .AppendLine("\t\t\t}")
-                                .AppendLine();
-                        }
-
-                        methodBuilder.AppendLine("\t\t\treturn routePath;");
-                    });
-
-                    sourceBuilder.AddMethod("void", $"NavigateTo{methodName}", parameters, methodBuilder =>
-                    {
-                        sourceBuilder
-                            .Append("\t\t\tstring uri = ").CallMethod(methodName, parameters.Select(kv => kv.Key)).AppendLine(";")
-                            .Append("\t\t\t").CallMethod("navigationManager.NavigateTo", ["uri", "forceLoad", "replace"]).AppendLine(";");
-                    }, navExtension: true);
-
-                    if (i > 1)
-                    {
-                        sourceBuilder.AppendLine();
-                    }
-
-                    i--;
-                }
-            }
+            BuildAllMethods(sourceBuilder, pageModels);
 
             sourceBuilder
                 .AppendLine("\t}")
@@ -310,6 +224,106 @@ namespace GeneratedBlazorRoutes
             }
 
             builder.AppendLine("\t\t};");
+        }
+
+        private static void BuildAllMethods(StringBuilder builder, IEnumerable<PageModel> pageModels)
+        {
+            IEnumerable<string> methodNames = Helpers.FindMinimalSegments(pageModels.Select(p => p.Name)).ToArray();
+
+            int i = pageModels.Count();
+            foreach (PageModel pageModel in pageModels)
+            {
+                string methodName = methodNames.FirstOrDefault(pageModel.Name.EndsWith);
+                if (methodName == default)
+                {
+                    methodName = pageModel.Name;
+                }
+                methodName = methodName.Replace(".", string.Empty);
+
+                foreach (RouteTemplate template in pageModel.RouteTemplates.OrderBy(route => route.Parameters.Count))
+                {
+                    IEnumerable<KeyValuePair<string, TypeSyntax>> parameters = template.Parameters.Concat(pageModel.QueryParameters);
+
+                    builder.AddMethod("string", methodName, parameters, methodBuilder => BuildPageMethod(methodBuilder, pageModel, template));
+
+                    builder.AddMethod("void", $"NavigateTo{methodName}", parameters, methodBuilder =>
+                    {
+                        methodBuilder
+                            .Append("\t\t\tstring uri = ").CallMethod(methodName, parameters.Select(kv => kv.Key)).AppendLine(";")
+                            .Append("\t\t\t").CallMethod("navigationManager.NavigateTo", ["uri", "forceLoad", "replace"]).AppendLine(";");
+                    }, navExtension: true);
+                }
+
+                if (i > 1)
+                {
+                    builder.AppendLine();
+                }
+
+                i--;
+            }
+        }
+
+        private static void BuildPageMethod(StringBuilder methodBuilder, PageModel pageModel, RouteTemplate template)
+        {
+            string path = template.Template;
+            if (template.Parameters.Any())
+            {
+                foreach (Match match in RouteTemplate.ParametersRegex.Matches(template.Template))
+                {
+                    string name = match.Groups[1].Value;
+
+                    string? typeName = null;
+                    if (match.Groups.Count >= 2)
+                    {
+                        typeName = match.Groups[2].Value;
+                    }
+
+                    path = path.Replace(match.Value, $"{{{name}{GetParameterFormatter(typeName)}}}");
+                }
+            }
+
+            methodBuilder
+                .Append("\t\t\tstring routePath = ").Append(template.Parameters.Any() ? "$" : string.Empty).Append("\"").Append(path).AppendLine("\";")
+                .AppendLine();
+
+            if (pageModel.QueryParameters.Any())
+            {
+                methodBuilder
+                    .Append("\t\t\t").Append(IEnumerableKvStringStringType).AppendLine(" queryParameters = new[]")
+                    .Append("\t\t\t{");
+
+                int i = pageModel.QueryParameters.Count();
+                foreach (KeyValuePair<string, TypeSyntax> queryParam in pageModel.QueryParameters)
+                {
+                    methodBuilder
+                        .AppendLine()
+                        .Append("\t\t\t\tnew ").Append(KvStringStringType).Append("(\"").Append(queryParam.Key).Append("\", ").Append(queryParam.Key);
+
+                    if (queryParam.Value is NullableTypeSyntax)
+                    {
+                        methodBuilder.Append("?");
+                    }
+                    methodBuilder.Append(".ToString())");
+
+                    if (i > 1)
+                    {
+                        methodBuilder.Append(",");
+                    }
+
+                    i--;
+                }
+                methodBuilder
+                    .AppendLine()
+                    .AppendLine("\t\t\t};")
+                    .Append("\t\t\t").Append(QueryStringType).Append(" queryString = ").Append(QueryStringType).AppendLine(".Create(queryParameters.Where(p => p.Value != null));")
+                    .AppendLine("\t\t\tif (queryString.HasValue)")
+                    .AppendLine("\t\t\t{")
+                    .AppendLine("\t\t\t\troutePath += queryString.Value;")
+                    .AppendLine("\t\t\t}")
+                    .AppendLine();
+            }
+
+            methodBuilder.AppendLine("\t\t\treturn routePath;");
         }
 
         private static string GetParameterFormatter(string? typeName) 

@@ -5,7 +5,7 @@ VisualStudioVersion = 17.10.35027.167
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BlazorRoutesGenerator", "BlazorRoutesGenerator\BlazorRoutesGenerator.csproj", "{C91F911C-7584-4E47-8617-83E07A705DDF}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SampleApp", "SampleApp\SampleApp.csproj", "{56B68FCF-86D3-421C-B0EF-F8680B630BFF}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SampleApp", "SampleApp\SampleApp.csproj", "{56B68FCF-86D3-421C-B0EF-F8680B630BFF}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
