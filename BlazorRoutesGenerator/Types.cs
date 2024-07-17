@@ -8,6 +8,8 @@ internal static class Types
 {
     public const string GlobalKeyword = "global::";
 
+    public const string ExcludeFromCodeCoverageAttributeType = GlobalKeyword + "System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage";
+
     public const string GeneratedCodeAttributeType = GlobalKeyword + "System.CodeDom.Compiler.GeneratedCodeAttribute";
 
     public const string CultureInfoType = GlobalKeyword + "System.Globalization.CultureInfo";

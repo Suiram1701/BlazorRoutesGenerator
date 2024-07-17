@@ -2,9 +2,12 @@
 
 namespace SampleApp.Components.Pages;
 
-[Route("/weather/{value}")]
+[Route("/weather/{value:datetime}")]
 public sealed partial class Weather
 {
     [Parameter]
-    public string Value { get; set; }
+    public DateTime Value { get; set; }
+
+    [SupplyParameterFromQuery]
+    public DateTime? Date { get; set; }
 }
