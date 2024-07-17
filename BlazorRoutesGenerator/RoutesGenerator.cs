@@ -125,9 +125,9 @@ namespace GeneratedBlazorRoutes
                 int i = pageModels.Count();
                 foreach (RouteTemplate template in pageModel.RouteTemplates.OrderBy(route => route.Parameters.Count))
                 {
-                    IEnumerable<KeyValuePair<string, TypeSyntax>> arguments = template.Parameters.Concat(pageModel.QueryParameters);
+                    IEnumerable<KeyValuePair<string, TypeSyntax>> parameters = template.Parameters.Concat(pageModel.QueryParameters);
 
-                    sourceBuilder.AddMethod("string", methodName, arguments, methodBuilder =>
+                    sourceBuilder.AddMethod("string", methodName, parameters, methodBuilder =>
                     {
                         string path = template.Template;
                         if (template.Parameters.Any())
@@ -189,6 +189,13 @@ namespace GeneratedBlazorRoutes
 
                         methodBuilder.AppendLine("\t\t\treturn routePath;");
                     });
+
+                    sourceBuilder.AddMethod("void", $"NavigateTo{methodName}", parameters, methodBuilder =>
+                    {
+                        sourceBuilder
+                            .Append("\t\t\tstring uri = ").CallMethod(methodName, parameters.Select(kv => kv.Key)).AppendLine(";")
+                            .Append("\t\t\t").CallMethod("navigationManager.NavigateTo", ["uri", "forceLoad", "replace"]).AppendLine(";");
+                    }, navExtension: true);
 
                     if (i > 1)
                     {

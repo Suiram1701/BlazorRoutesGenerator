@@ -19,4 +19,6 @@ internal static class Types
     public const string KvStringStringType = GlobalKeyword + "System.Collections.Generic.KeyValuePair<string, string?>";
 
     public const string QueryStringType = GlobalKeyword + "Microsoft.AspNetCore.Http.QueryString";
+
+    public const string NavigationManagerType = GlobalKeyword + "Microsoft.AspNetCore.Components.NavigationManager";
 }
