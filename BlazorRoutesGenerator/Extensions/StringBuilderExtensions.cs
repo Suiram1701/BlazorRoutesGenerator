@@ -75,4 +75,32 @@ internal static class StringBuilderExtensions
 
         return builder.Append(")");
     }
+
+    public static StringBuilder AddMemberDocumentation(this StringBuilder builder, string summary, string? remarks, string? returns, IEnumerable<KeyValuePair<string, string>> parameters)
+    {
+        builder
+            .AppendLine("\t\t/// <summary>")
+            .Append("\t\t/// ").AppendLine(summary)
+            .AppendLine("\t\t/// </summary>");
+
+        if (!string.IsNullOrEmpty(remarks))
+        {
+            builder
+                .AppendLine("\t\t/// <remarks>")
+                .Append("\t\t/// ").AppendLine(returns)
+                .AppendLine("\t\t/// </remarks>");
+        }
+
+        foreach (KeyValuePair<string, string> parameter in parameters)
+        {
+            builder.Append("\t\t/// <param name=\"").Append(parameter.Key).Append("\">").Append(parameter.Value).AppendLine("</param>");
+        }
+
+        if (!string.IsNullOrEmpty(returns))
+        {
+            builder.Append("\t\t/// <returns>").Append(returns).AppendLine("</returns>");
+        }
+
+        return builder;
+    }
 }
