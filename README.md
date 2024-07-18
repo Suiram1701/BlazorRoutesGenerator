@@ -1,6 +1,6 @@
 # BlazorRoutesGenerator
 
-This library provides a code generator that detects routable components in .cs or in .razor files.
+This library provides a code generator that detects routable components in .cs or in .razor files and create har-coded routes based on them.
 The code generator will be recognize [@page-directive](https://learn.microsoft.com/aspnet/core/mvc/views/razor#page) in .razor files and the [[Route("/")]](https://learn.microsoft.com/dotnet/api/microsoft.aspnetcore.components.routeattribute)-attribute in .cs files.\
 For each route defined by one of the mentioned ways the generator will generate two method. The first one will generate an relative uri to the page and the second one is an extensions of [NavigationManager](https://learn.microsoft.com/dotnet/api/microsoft.aspnetcore.components.navigationmanager) that will navigate to this page. The extension has the same method name as the uri creator method but with the prefix NavigateTo.
 

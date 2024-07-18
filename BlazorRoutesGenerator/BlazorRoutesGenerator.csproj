@@ -8,6 +8,15 @@
 		<CompilerGeneratedFilesOutputPath>Generated</CompilerGeneratedFilesOutputPath>
 		<IsRoslynComponent>true</IsRoslynComponent>
 		<LangVersion>latest</LangVersion>
+		<PackageId>Suiram1.$(AssemblyName)</PackageId>
+		<Title>$(AssemblyName)</Title>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
+		<RepositoryUrl>https://github.com/Suiram1701/BlazorRoutesGenerator</RepositoryUrl>
+		<PackageTags>Blazor;Source Generator;Hard-Coded Routes;Routing</PackageTags>
+		<PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
+		<Authors>Suiram1701</Authors>
+		<Copyright>Copyright © Marius Kaufman 2024</Copyright>
+		<Description>This library provides a code generator that detects routable components in .cs or in .razor files and create har-coded routes based on them.</Description>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -17,6 +26,14 @@
 
 	<ItemGroup>
 		<None Include="$(OutputPath)\$(AssemblyName).dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
+		<None Include="..\LICENSE.txt">
+		  <Pack>True</Pack>
+		  <PackagePath>\</PackagePath>
+		</None>
+		<None Include="..\README.md">
+		  <Pack>True</Pack>
+		  <PackagePath>\</PackagePath>
+		</None>
 	</ItemGroup>
 
 </Project>
