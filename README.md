@@ -1,4 +1,4 @@
-# BlazorRoutesGenerator
+# BlazorRoutesGenerator ![NuGet Version](https://img.shields.io/nuget/vpre/Suiram1.BlazorRoutesGenerator) ![NuGet Downloads](https://img.shields.io/nuget/dt/Suiram1.BlazorRoutesGenerator)
 
 This library provides a code generator that detects routable components in .cs or in .razor files and create har-coded routes based on them.
 The code generator will be recognize [@page-directive](https://learn.microsoft.com/aspnet/core/mvc/views/razor#page) in .razor files and the [[Route("/")]](https://learn.microsoft.com/dotnet/api/microsoft.aspnetcore.components.routeattribute)-attribute in .cs files.\
