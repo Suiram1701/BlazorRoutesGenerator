@@ -1,4 +1,5 @@
 ﻿using BlazorRoutesGenerator;
+using BlazorRoutesGenerator.EqualityComparer;
 using BlazorRoutesGenerator.Extensions;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -75,24 +76,22 @@ namespace GeneratedBlazorRoutes
             return (classDeclaration, pageRoutes);
         }
 
-        private static (ClassDeclarationSyntax, ImmutableArray<string>) ParseRazorPageForGeneration(AdditionalText text, CancellationToken ct)
+        private static (ClassDeclarationSyntax, ImmutableArray<string>) ParseRazorPageForGeneration(AdditionalText file, CancellationToken ct)
         {
-            SourceText? content = text.GetText(ct);
+            SourceText? content = file.GetText(ct);
             if (content == null)
             {
                 return (null, [])!;
             }
 
             ImmutableArray<string> routes = content.Lines
-                .Select(line => Regex.Match(line.ToString(), "@page\\s\"(.+?)\"").Groups[1].Value)
+                .Select(line => Regex.Match(line.ToString(), "^\\s*@page\\s\"(.+?)\"", RegexOptions.Singleline).Groups[1].Value)
                 .Where(route => !string.IsNullOrEmpty(route))
                 .Distinct()
                 .ToImmutableArray();
 
-            string filePath = text.Path.Substring(0, text.Path.LastIndexOf(".razor"));
-            string pathWithOutDrive = filePath.Substring(filePath.IndexOf(Path.VolumeSeparatorChar) + 2);
-
-            return (SyntaxFactory.ClassDeclaration(pathWithOutDrive.Replace(Path.DirectorySeparatorChar, '.')), routes);
+            string pageIdentifier = GetRazorPageIdentifier(file, content);
+            return (SyntaxFactory.ClassDeclaration(pageIdentifier), routes);
         }
 
         private static void Execute(Compilation compilation, SourceProductionContext context, ImmutableArray<(ClassDeclarationSyntax, ImmutableArray<string>)> pages)
@@ -126,6 +125,23 @@ namespace GeneratedBlazorRoutes
                 .AppendLine("}");
 
             context.AddSource("Routes.g.cs", sourceBuilder.ToString());
+        }
+
+        private static string GetRazorPageIdentifier(AdditionalText file, SourceText text)
+        {
+            foreach (TextLine line in text.Lines)
+            {
+                Match match = Regex.Match(line.ToString(), "^\\s*@namespace\\s(?:([a-zA-Z]\\w*)\\.?)+", RegexOptions.Singleline);
+                if (match.Success)
+                {
+                    string fileName = Path.GetFileNameWithoutExtension(file.Path);
+                    return string.Join(".", [.. match.Groups[1].Captures, fileName]);
+                }
+            }
+
+            string filePath = file.Path.Substring(0, file.Path.LastIndexOf(".razor"));
+            string pathWithoutDrive = filePath.Substring(filePath.IndexOf(Path.VolumeSeparatorChar) + 2);
+            return pathWithoutDrive.Replace(Path.DirectorySeparatorChar, '.');
         }
 
         private static ImmutableArray<PageModel> GetPageModels(Compilation compilation, ImmutableArray<(ClassDeclarationSyntax, ImmutableArray<string>)> pages)
@@ -163,8 +179,8 @@ namespace GeneratedBlazorRoutes
             return pageModels
                 .Select(kv => new PageModel(
                     name: kv.Key,
-                    routeTemplates: [..kv.Value.Item1],
-                    queryParameters: kv.Value.Item2.ToImmutableDictionary()))
+                    routeTemplates: [..kv.Value.Item1.Distinct(RouteTemplateComparer.Default)],
+                    queryParameters: kv.Value.Item2.Distinct(QueryParameterComparer.Default).ToImmutableDictionary()))
                 .ToImmutableArray();
         }
 
@@ -252,11 +268,11 @@ namespace GeneratedBlazorRoutes
                             .Append("\t\t\tstring uri = ").CallMethod(methodName, parameters.Select(kv => kv.Key)).AppendLine(";")
                             .Append("\t\t\t").CallMethod("navigationManager.NavigateTo", ["uri", "forceLoad", "replace"]).AppendLine(";");
                     }, navExtension: true);
-                }
 
-                if (i > 1)
-                {
-                    builder.AppendLine();
+                    if (i > 1)
+                    {
+                        builder.AppendLine();
+                    }
                 }
 
                 i--;
