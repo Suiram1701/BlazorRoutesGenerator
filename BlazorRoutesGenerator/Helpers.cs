@@ -7,10 +7,11 @@ namespace BlazorRoutesGenerator;
 
 internal static class Helpers
 {
-    public static IEnumerable<string> FindMinimalSegments(IEnumerable<string> input)
+    public static Dictionary<string, string> FindMinimalSegments(string[] input)
     {
-        List<string[]> splitStrings = input.Select(s => s.Split('.')).ToList();
+        string[][] splitStrings = input.Select(s => s.Split('.')).ToArray();
 
+        Dictionary<string, string> results = [];
         int inputCount = input.Count();
         for (int i = 0; i < inputCount; i++)
         {
@@ -29,14 +30,15 @@ internal static class Helpers
                 minLength++;
             }
 
-            yield return uniqueSegment;
+            results.Add(input[i], uniqueSegment);
         }
+
+        return results;
     }
 
-    private static bool IsUnique(string segment, List<string[]> splitStrings)
+    private static bool IsUnique(string segment, string[][] splitStrings)
     {
         int count = 0;
-
         foreach (string[] parts in splitStrings)
         {
             string currentSegment = string.Join(".", parts.Skip(parts.Length - segment.Split('.').Length));

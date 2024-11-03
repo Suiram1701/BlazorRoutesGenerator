@@ -166,8 +166,8 @@ namespace BlazorRoutesGenerator
 
             IEnumerable<PageModel> pageModels = GetPageModels(compilation, config, pages);
             IEnumerable<string> allRoutes = pageModels.SelectMany(page => page.RouteTemplates.OrderBy(route => route.Parameters.Count).Select(route => route.Template));
-            BuildAllRoutes(sourceBuilder, allRoutes);
 
+            BuildAllRoutes(sourceBuilder, allRoutes);
             sourceBuilder.AppendLine();
 
             BuildAllMethods(sourceBuilder, pageModels);
@@ -181,39 +181,38 @@ namespace BlazorRoutesGenerator
 
         private static ImmutableArray<PageModel> GetPageModels(Compilation compilation, GeneratorConfig? config, ImmutableArray<(ClassDeclarationSyntax, ImmutableArray<string>)> pages)
         {
-            Dictionary<string, (string FullName, List<RouteTemplate> Routes, List<KeyValuePair<string, TypeSyntax>> QueryParams)> pageModels = [];
+            StringBuilder sb = new();
+
+            Dictionary<string, (List<RouteTemplate> Routes, List<KeyValuePair<string, TypeSyntax>> QueryParams)> pageModels = [];
             foreach ((ClassDeclarationSyntax classDeclaration, ImmutableArray<string> routes) in pages)
             {
                 IEnumerable<RouteTemplate> routeTemplates = routes.Select(RouteTemplate.ParseRouteTemplate);
-
                 IEnumerable<KeyValuePair<string, TypeSyntax>> queryParams = GetQueryParameters(compilation, classDeclaration);
 
                 INamedTypeSymbol? symbol = compilation.SyntaxTrees.Contains(classDeclaration.SyntaxTree)
                     ? compilation.GetSemanticModel(classDeclaration.SyntaxTree).GetDeclaredSymbol(classDeclaration)
                     : null;
-                string fullQualifiedName = symbol is not null
+                string name = symbol is not null
                     ? symbol.GetFullQualifiedName()
                     : classDeclaration.Identifier.Text;
 
-                IEnumerable<string> namespaces = fullQualifiedName.Split('.');
+                IEnumerable<string> namespaces = name.Split('.');
 
                 int nameIndex = namespaces.ToList().IndexOf(compilation.Assembly.Name);
-                string typeName = string.Join(".", namespaces.Skip(nameIndex));
+                string fullQualifiedName = string.Join(".", namespaces.Skip(nameIndex));
 
-                if (config?.OverwriteNames.TryGetValue(typeName, out string newName) ?? false
-                    && !pageModels.ContainsKey(newName))
-                {
-                    typeName = newName;
-                }
+                sb.AppendLine(name);
+                sb.AppendLine(fullQualifiedName);
+                sb.AppendLine();
 
-                if (pageModels.ContainsKey(typeName))
+                if (pageModels.ContainsKey(fullQualifiedName))
                 {
-                    pageModels[typeName].Routes.AddRange(routeTemplates);
-                    pageModels[typeName].QueryParams.AddRange(queryParams);
+                    pageModels[fullQualifiedName].Routes.AddRange(routeTemplates);
+                    pageModels[fullQualifiedName].QueryParams.AddRange(queryParams);
                 }
                 else
                 {
-                    pageModels.Add(typeName, (fullQualifiedName, routeTemplates.ToList(), queryParams.ToList()));
+                    pageModels.Add(fullQualifiedName, (routeTemplates.ToList(), queryParams.ToList()));
                 }
             }
 
@@ -221,7 +220,7 @@ namespace BlazorRoutesGenerator
                 .Select(kv =>
                 {
                     string name = kv.Key;
-                    if (config?.OverwriteNames.TryGetValue(kv.Value.FullName, out string newName) ?? false
+                    if (config?.OverwriteNames.TryGetValue(kv.Key, out string newName) ?? false
                         && !pageModels.ContainsKey(newName))
                     {
                         name = newName;
@@ -296,13 +295,12 @@ namespace BlazorRoutesGenerator
 
         private static void BuildAllMethods(StringBuilder builder, IEnumerable<PageModel> pageModels)
         {
-            IEnumerable<string> methodNames = Helpers.FindMinimalSegments(pageModels.Select(p => p.Name)).ToArray();
+            Dictionary<string, string> methodNames = Helpers.FindMinimalSegments(pageModels.Select(p => p.Name).ToArray());
 
             int i = pageModels.Count();
             foreach (PageModel pageModel in pageModels)
             {
-                string methodName = methodNames.FirstOrDefault(pageModel.Name.EndsWith);
-                if (methodName == default)
+                if (!methodNames.TryGetValue(pageModel.Name, out string methodName))
                 {
                     methodName = pageModel.Name;
                 }
@@ -311,11 +309,9 @@ namespace BlazorRoutesGenerator
                 foreach (RouteTemplate template in pageModel.RouteTemplates.OrderBy(route => route.Parameters.Count))
                 {
                     IEnumerable<KeyValuePair<string, TypeSyntax>> parameters = template.Parameters.Concat(pageModel.QueryParameters);
-
                     IEnumerable<KeyValuePair<string, string>> parametersDoc = parameters.Select(parameter =>
                     {
                         string name = parameter.Key;
-
                         string paramType = template.Parameters.ContainsKey(name)
                             ? "route"
                             : "query";
@@ -334,7 +330,7 @@ namespace BlazorRoutesGenerator
 
                     IEnumerable<KeyValuePair<string, string>> navigationParametersDoc =
                     [
-                        new KeyValuePair<string, string>("forceLoad", "If true, bypasses client-side routing and reloads the page from the server."),
+                        new KeyValuePair<string, string>("forceLoad", "If true, bypasses client-side routing and reloads the page with a HTTP request."),
                         new KeyValuePair<string, string>("replace", "If true, replaces the current entry in the history stack.")
                     ];
 
