@@ -15,13 +15,17 @@
 		<PackageTags>Blazor;Source Generator;Hard-Coded Routes;Routing</PackageTags>
 		<PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
 		<Authors>Suiram1701</Authors>
-		<Copyright>Copyright © Marius Kaufman 2024</Copyright>
-		<Description>This library provides a code generator that detects routable components in .cs or in .razor files and create har-coded routes based on them.</Description>
+		<Copyright>Copyright © Suiram1701 2024</Copyright>
+		<Description>This library provides a code generator that detects routable components in .cs or in .razor files and create hard-coded routes based on them.</Description>
+		<Version>$(VersionPrefix)</Version>
+		<AssemblyVersion>1.1.0</AssemblyVersion>
+		<FileVersion>1.1.0</FileVersion>
 	</PropertyGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.10.0" PrivateAssets="all" />
-		<PackageReference Include="Microsoft.CodeAnalysis.Analyzers" Version="3.3.4" PrivateAssets="all" />
+		<PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.11.0" PrivateAssets="all" />
+		<PackageReference Include="Microsoft.CodeAnalysis.Analyzers" Version="3.11.0" PrivateAssets="all" />
+		<PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
 	</ItemGroup>
 
 	<ItemGroup>

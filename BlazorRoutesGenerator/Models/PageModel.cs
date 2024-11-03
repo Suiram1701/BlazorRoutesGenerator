@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Text;
 
-namespace BlazorRoutesGenerator;
+namespace BlazorRoutesGenerator.Models;
 
 internal class PageModel(string name, ImmutableArray<RouteTemplate> routeTemplates, ImmutableDictionary<string, TypeSyntax> queryParameters)
 {

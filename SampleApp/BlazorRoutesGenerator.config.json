@@ -1,0 +1,6 @@
+{
+  "namesOverwrites": {
+    "SampleApp.Components.Pages.Weather": "WeatherForecast",
+    "SampleApp.Components.Pages.Something.Page": "AnotherRenamedPage"
+  }
+}

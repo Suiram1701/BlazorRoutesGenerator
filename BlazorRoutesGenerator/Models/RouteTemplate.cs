@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Text.RegularExpressions;
 
-namespace BlazorRoutesGenerator;
+namespace BlazorRoutesGenerator.Models;
 
 internal class RouteTemplate(string template, ImmutableDictionary<string, TypeSyntax> parameters)
 {
@@ -27,7 +27,7 @@ internal class RouteTemplate(string template, ImmutableDictionary<string, TypeSy
 
             string name = match.Groups[1].Value;
             string typeName = match.Groups[2].Value;
-            
+
             Type? type = typeName switch
             {
                 "" => typeof(string),
