@@ -17,7 +17,7 @@
 		<Authors>Suiram1701</Authors>
 		<Copyright>Copyright © Suiram1701 2024</Copyright>
 		<Description>This library provides a code generator that detects routable components in .cs or in .razor files and create hard-coded routes based on them.</Description>
-		<Version>$(VersionPrefix)</Version>
+		<Version>1.1.0</Version>
 		<AssemblyVersion>1.1.0</AssemblyVersion>
 		<FileVersion>1.1.0</FileVersion>
 	</PropertyGroup>
