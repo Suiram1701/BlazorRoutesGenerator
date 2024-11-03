@@ -16,8 +16,35 @@ The type of the query parameter is determined by the type of the property. Compl
 
 ## Generated methods
 
-Every method generated is inside of the static class named __Routes__ inside the application root namespace. The name of the methods is determined by the class/file name. If two classes/files has the same names as little as possible from the namespace is used to clearly identify the page.\
-For example the page *../Pages/Index.razor* has the method name __Index__. But when there are two pages *../Pages/SectionA/Index.razor* and *../Pages/SectionB/Index.razor* the method names of these pages are __SectionAIndex__ and __SectionBIndex__. In .razor files is for that purpose also the [@namespace-directive](https://learn.microsoft.com/aspnet/core/mvc/views/razor#namespace) supported.
+Every method generated is inside of a static class that is by default inside of the applications root namespace and is called **Routes**. The name of the methods is determined by the class/file name. If two classes/files has the same names as little as possible from the namespace is used to clearly identify the page.\
+For example the page *../Pages/Index.razor* has the method name **Index**. But when there are two pages *../Pages/SectionA/Index.razor* and *../Pages/SectionB/Index.razor* the method names of these pages are **SectionAIndex** and **SectionBIndex**. In .razor files is for that purpose also the [@namespace-directive](https://learn.microsoft.com/aspnet/core/mvc/views/razor#namespace) supported.
+
+## Configuration
+
+Some behaviors of the generator can be configured using a .json file. Using a configuration file you can change the namespace and the class name of the class containing the routes.
+You can also change the name of the methods that are responsable for a routable component.
+
+The file have to be named *BlazorRoutesGenerator.config.json* and have to be included in the .csproj file of the project. You have add the following part to the .csproj file:
+```
+<ItemGroup>
+  <AdditionalFiles Include="BlazorRoutesGenerator.config.json" />
+</ItemGroup>
+```
+If multiple *BlazorRoutesGenerator.config.json* are specified every file will be ignored.
+
+The *BlazorRoutesGenerator.config.json* have to has the following structure:
+```
+{
+  "namespace": "MyApplication",
+  "className": "Routes",
+  "namesOverwrites": {
+    "SampleApp.Components.Pages.Weather": "RenamedPage",
+    "SampleApp.Components.Pages.Something.Page": "AnotherRenamedPage"
+  }
+}
+```
+If you don't want to change a settings you can remove the json property and the default value will be used. The default namespace is you applications root namespace and the default class name is **Routes**.
+An invalid configuration or doubled names for example if rename a page to **PageA** but another page is by default named **PageA** the configuration will be ignored.
 
 ## Limitations
 
