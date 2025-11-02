@@ -1,11 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-
 	<PropertyGroup>
 		<TargetFramework>netstandard2.0</TargetFramework>
 		<Nullable>enable</Nullable>
-		<EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
-		<EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
-		<CompilerGeneratedFilesOutputPath>Generated</CompilerGeneratedFilesOutputPath>
 		<IsRoslynComponent>true</IsRoslynComponent>
 		<LangVersion>latest</LangVersion>
 		<PackageId>Suiram1.$(AssemblyName)</PackageId>
@@ -15,34 +11,35 @@
 		<PackageTags>Blazor;Source Generator;Hard-Coded Routes;Routing</PackageTags>
 		<PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
 		<Authors>Suiram1701</Authors>
-		<Copyright>Copyright © Suiram1701 2024</Copyright>
+		<Copyright>Copyright © Suiram1701 2024-2025</Copyright>
 		<Description>This library provides a code generator that detects routable components in .cs or in .razor files and create hard-coded routes based on them.</Description>
-		<Version>1.1.1</Version>
-		<AssemblyVersion>1.1.1</AssemblyVersion>
-		<FileVersion>1.1.1</FileVersion>
+		<Version>2.0.0</Version>
+		<AssemblyVersion>2.0.0</AssemblyVersion>
+		<FileVersion>2.0.0</FileVersion>
 
+        <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
+        <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+        <CompilerGeneratedFilesOutputPath>Generated</CompilerGeneratedFilesOutputPath>
 		<IncludeBuildOutput>false</IncludeBuildOutput>
 
-		<PackageReleaseNotes>-Fixed the referencing of a build time dependency.</PackageReleaseNotes>
+		<PackageReleaseNotes>
+            **BREAKING CHANGE:** Configuration has to be moved from JSON file to .csproj (see https://github.com/Suiram1701/BlazorRoutesGenerator?tab=readme-ov-file#configuration)
+            - Moved configuration from extra JSON file to project config.
+            - Fixed messed up parameter order
+        </PackageReleaseNotes>
 	</PropertyGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.12.0" PrivateAssets="all" />
+		<PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.14.0" PrivateAssets="all" />
 		<PackageReference Include="Microsoft.CodeAnalysis.Analyzers" Version="3.11.0" PrivateAssets="all" />
 	</ItemGroup>
 
 	<ItemGroup>
-		<None Include="$(OutputPath)\$(AssemblyName).dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
-        <None Include="BlazorRoutesGenerator.props" Pack="true" PackagePath="build" Visible="false" />
+        <None Include="BlazorRoutesGenerator.props" />
         
-		<None Include="..\LICENSE.txt">
-		  <Pack>True</Pack>
-		  <PackagePath>\</PackagePath>
-		</None>
-		<None Include="..\README.md">
-		  <Pack>True</Pack>
-		  <PackagePath>\</PackagePath>
-		</None>
+		<None Include="..\README.md" Pack="true" PackagePath="/" />
+		<None Include="..\LICENSE.txt" Pack="true" PackagePath="/" />
+        <None Include="BlazorRoutesGenerator.props" Pack="true" PackagePath="build/$(PackageId).props" Visible="true" />
+		<None Include="$(OutputPath)\$(AssemblyName).dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
 	</ItemGroup>
-
 </Project>

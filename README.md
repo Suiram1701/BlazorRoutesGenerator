@@ -1,7 +1,7 @@
 # BlazorRoutesGenerator ![NuGet Version](https://img.shields.io/nuget/vpre/Suiram1.BlazorRoutesGenerator) ![NuGet Downloads](https://img.shields.io/nuget/dt/Suiram1.BlazorRoutesGenerator)
 
 This library provides a code generator that detects routable components in .cs or in .razor files and create har-coded routes based on them.
-The code generator will be recognize [@page-directive](https://learn.microsoft.com/aspnet/core/mvc/views/razor#page) in .razor files and the [[Route("/")]](https://learn.microsoft.com/dotnet/api/microsoft.aspnetcore.components.routeattribute)-attribute in .cs files.\
+The code generator will recognize [@page-directive](https://learn.microsoft.com/aspnet/core/mvc/views/razor#page) in .razor files and the [[Route("/")]](https://learn.microsoft.com/dotnet/api/microsoft.aspnetcore.components.routeattribute)-attribute in .cs files.\
 For each route defined by one of the mentioned ways the generator will generate two method. The first one will generate an relative uri to the page and the second one is an extensions of [NavigationManager](https://learn.microsoft.com/dotnet/api/microsoft.aspnetcore.components.navigationmanager) that will navigate to this page. The extension has the same method name as the uri creator method but with the prefix NavigateTo.
 
 ## Route parameters
@@ -21,31 +21,26 @@ For example the page *../Pages/Index.razor* has the method name **Index**. But w
 
 ## Configuration
 
-Some behaviors of the generator can be configured using a .json file. Using a configuration file you can change the namespace and the class name of the class containing the routes.
-You can also change the name of the methods that are responsable for a routable component.
+Some behaviors of the generator can be configured in the .csproj file of the application. You can configure the namespace and class name of the class containing the routes.
+You can also override the name of the methods that are responsable for a routable component.
 
-The file have to be named *BlazorRoutesGenerator.config.json* and have to be included in the .csproj file of the project. You have add the following part to the .csproj file:
+A sample configuration looks like this (other configs excluded):
 ```
-<ItemGroup>
-  <AdditionalFiles Include="BlazorRoutesGenerator.config.json" />
-</ItemGroup>
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <PropertyGroup>
+    <BlazorRoutesGenerator_Namespace>MyApplication</BlazorRoutesGenerator_Namespace>
+    <BlazorRoutesGenerator_ClassName>StaticRoutes</BlazorRoutesGenerator_ClassName>
+    <BlazorRoutesGenerator_NameOverrides>
+        SampleApp.Components.Pages.Weather=WeatherForecast
+        SampleApp.Components.Pages.Something.Page=AnotherRenamedPage
+    </BlazorRoutesGenerator_NameOverrides>
+  </PropertyGroup>
+</Project>
 ```
-If multiple *BlazorRoutesGenerator.config.json* are specified every file will be ignored.
 
-The *BlazorRoutesGenerator.config.json* have to has the following structure:
-```
-{
-  "namespace": "MyApplication",
-  "className": "Routes",
-  "namesOverwrites": {
-    "SampleApp.Components.Pages.Weather": "RenamedPage",
-    "SampleApp.Components.Pages.Something.Page": "AnotherRenamedPage"
-  }
-}
-```
-If you don't want to change a settings you can remove the json property and the default value will be used. The default namespace is you applications root namespace and the default class name is **Routes**.
+You don't have to use all properties. If you doesn't use one the default values will be used. The default namespace is you applications root namespace and the default class name is **Routes**.
 An invalid configuration or doubled names for example if rename a page to **PageA** but another page is by default named **PageA** the configuration will be ignored.
 
 ## Limitations
 
-Query parameters are __only in .cs files__ supported. Inside of .razor files they won't be detected. In case that you want to use .razor files for HTML + CS and query parameters you can define the page in partial classes ([more about that here](https://www.pragimtech.com/blog/blazor/Split-razor-component/)) and define the query parameters there.
+Query parameters are __only in .cs files__ supported. Inside a .razor file they won't be detected. In case that you want to use .razor files for HTML + CS and query parameters you can define the page in partial classes ([more about that here](https://www.pragimtech.com/blog/blazor/Split-razor-component/)) and define the query parameters there.
