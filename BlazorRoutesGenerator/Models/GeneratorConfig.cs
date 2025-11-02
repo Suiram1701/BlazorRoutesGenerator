@@ -21,15 +21,17 @@ public class GeneratorConfig
     
     public static GeneratorConfig LoadFromGlobalOptions(AnalyzerConfigOptions options, string prefix)
     {
-        if (!options.TryGetValue($"{prefix}_Namespace", out string? @namespace))
+        bool namespaceSet = options.TryGetValue($"{prefix}_Namespace", out string? @namespace);
+        if (!namespaceSet || string.IsNullOrWhiteSpace(@namespace))
         {
             if (!options.TryGetValue("build_property.rootnamespace", out @namespace))     // Set by MSBuild -> Can't be false
                 throw new InvalidOperationException("Unable to determine root namespace of the application.");
         }
-        
-        if (!options.TryGetValue($"{prefix}_ClassName", out string? className))
+
+        bool classSet = options.TryGetValue($"{prefix}_ClassName", out string? className);
+        if (!classSet || string.IsNullOrWhiteSpace(className))
             className = "Routes";
         
-        return new GeneratorConfig(@namespace, className, new AnalyzerOptionsDictionary(options));
+        return new GeneratorConfig(@namespace!, className!, new AnalyzerOptionsDictionary(options));
     }
 }

@@ -13,9 +13,9 @@
 		<Authors>Suiram1701</Authors>
 		<Copyright>Copyright © Suiram1701 2024-2025</Copyright>
 		<Description>This library provides a code generator that detects routable components in .cs or in .razor files and create hard-coded routes based on them.</Description>
-		<Version>2.0.0</Version>
-		<AssemblyVersion>2.0.0</AssemblyVersion>
-		<FileVersion>2.0.0</FileVersion>
+		<Version>2.0.1</Version>
+		<AssemblyVersion>2.0.1</AssemblyVersion>
+		<FileVersion>2.0.1</FileVersion>
 
         <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
         <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
@@ -23,9 +23,7 @@
 		<IncludeBuildOutput>false</IncludeBuildOutput>
 
 		<PackageReleaseNotes>
-            **BREAKING CHANGE:** Configuration has to be moved from JSON file to .csproj (see https://github.com/Suiram1701/BlazorRoutesGenerator?tab=readme-ov-file#configuration)
-            - Moved configuration from extra JSON file to project config.
-            - Fixed messed up parameter order
+            - Hotfix: Wrong generation when config unset. 
         </PackageReleaseNotes>
 	</PropertyGroup>
 
