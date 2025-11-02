@@ -29,19 +29,6 @@ public class GeneratorConfig
         
         if (!options.TryGetValue($"{prefix}_ClassName", out string? className))
             className = "Routes";
-
-        // Dictionary<string, string> overrideNames = [];
-        // if (options.TryGetValue($"{prefix}_NameOverrides", out string? overrideStr))
-        // {
-        //     foreach (string line in overrideStr.Trim().Split('\n', '\r'))
-        //     {
-        //         string[] parts = line.Split('=');
-        //         if (parts.Length != 2)
-        //             throw new InvalidOperationException("Assignment from full qualified name to method name was expected. See https://github.com/Suiram1701/BlazorRoutesGenerator?tab=readme-ov-file#configuration");
-        //         
-        //         overrideNames.Add(parts[0].Trim(), parts[1].Trim());
-        //     }
-        // }
         
         return new GeneratorConfig(@namespace, className, new AnalyzerOptionsDictionary(options));
     }

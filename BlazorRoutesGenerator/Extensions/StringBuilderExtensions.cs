@@ -25,7 +25,7 @@ internal static class StringBuilderExtensions
             }
         }
 
-        foreach (KeyValuePair<string, TypeSyntax> parameter in parameters.OrderBy(paramater => paramater.Value is NullableTypeSyntax))
+        foreach (KeyValuePair<string, TypeSyntax> parameter in parameters)
         {
             builder.AppendFormat("{0} {1}", parameter.Value, parameter.Key);
 

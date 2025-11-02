@@ -6,11 +6,11 @@ using System.Text;
 
 namespace BlazorRoutesGenerator.Models;
 
-internal class PageModel(string name, ImmutableArray<RouteTemplate> routeTemplates, ImmutableDictionary<string, TypeSyntax> queryParameters)
+internal class PageModel(string name, ImmutableArray<RouteTemplate> routeTemplates, IEnumerable<KeyValuePair<string, TypeSyntax>> queryParameters)
 {
     public string Name { get; set; } = name;
 
     public ImmutableArray<RouteTemplate> RouteTemplates { get; set; } = routeTemplates;
 
-    public ImmutableDictionary<string, TypeSyntax> QueryParameters { get; set; } = queryParameters;
+    public IEnumerable<KeyValuePair<string, TypeSyntax>> QueryParameters { get; set; } = queryParameters;
 }

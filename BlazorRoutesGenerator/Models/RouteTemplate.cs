@@ -3,31 +3,36 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Linq;
 using System.Text.RegularExpressions;
 
 namespace BlazorRoutesGenerator.Models;
 
-internal class RouteTemplate(string template, ImmutableDictionary<string, TypeSyntax> parameters)
+internal class RouteTemplate
 {
     public static Regex ParametersRegex => new("{([a-zA-Z][a-zA-Z0-9]*)(?::([a-z]+))?}", RegexOptions.Singleline | RegexOptions.Compiled);
 
-    public string Template { get; set; } = template;
+    public string Template { get; }
 
-    public ImmutableDictionary<string, TypeSyntax> Parameters { get; set; } = parameters;
+    public IEnumerable<KeyValuePair<string, TypeSyntax>> Parameters { get; }
 
+    private RouteTemplate(string template, IEnumerable<KeyValuePair<string, TypeSyntax>> parameters)
+    {
+        Template = template;
+        Parameters = parameters;
+    }
+    
     public static RouteTemplate ParseRouteTemplate(string template)
     {
-        Dictionary<string, TypeSyntax> parameters = [];
+        List<KeyValuePair<string, TypeSyntax>> parameters = [];
         foreach (Match match in ParametersRegex.Matches(template))
         {
             if (!match.Success)
-            {
                 continue;
-            }
 
             string name = match.Groups[1].Value;
             string typeName = match.Groups[2].Value;
-
+            
             Type? type = typeName switch
             {
                 "" => typeof(string),
@@ -41,16 +46,13 @@ internal class RouteTemplate(string template, ImmutableDictionary<string, TypeSy
                 "long" => typeof(long),
                 _ => null
             };
-
             if (type is null)
-            {
                 continue;
-            }
 
             TypeSyntax typeSyntax = SyntaxFactory.ParseTypeName(type.FullName);
-            parameters.Add(name, typeSyntax);
+            parameters.Add(new KeyValuePair<string, TypeSyntax>(name, typeSyntax));
         }
 
-        return new(template, parameters.ToImmutableDictionary());
+        return new RouteTemplate(template, parameters.AsReadOnly());
     }
 }

@@ -138,7 +138,7 @@ namespace BlazorRoutesGenerator
                 .AppendLine("\t{");
 
             IEnumerable<PageModel> pageModels = GetPageModels(compilation, config, pages);
-            IEnumerable<string> allRoutes = pageModels.SelectMany(page => page.RouteTemplates.OrderBy(route => route.Parameters.Count).Select(route => route.Template));
+            IEnumerable<string> allRoutes = pageModels.SelectMany(page => page.RouteTemplates.OrderBy(route => route.Parameters.Count()).Select(route => route.Template));
 
             BuildAllRoutes(sourceBuilder, allRoutes);
             sourceBuilder.AppendLine();
@@ -202,7 +202,7 @@ namespace BlazorRoutesGenerator
                     return new PageModel(
                         name: name,
                         routeTemplates: [.. kv.Value.Routes.Distinct(RouteTemplateComparer.Default)],
-                        queryParameters: kv.Value.QueryParams.Distinct(QueryParameterComparer.Default).ToImmutableDictionary());
+                        queryParameters: kv.Value.QueryParams.Distinct(QueryParameterComparer.Default));
                 })
                 .ToImmutableArray();
         }
@@ -279,16 +279,18 @@ namespace BlazorRoutesGenerator
                 }
                 methodName = methodName.Replace(".", string.Empty);
 
-                foreach (RouteTemplate template in pageModel.RouteTemplates.OrderBy(route => route.Parameters.Count))
+                foreach (RouteTemplate template in pageModel.RouteTemplates.OrderBy(route => route.Parameters.Count()))
                 {
-                    IEnumerable<KeyValuePair<string, TypeSyntax>> parameters = template.Parameters.Concat(pageModel.QueryParameters);
+                    IEnumerable<KeyValuePair<string, TypeSyntax>> parameters = template.Parameters
+                        .Concat(pageModel.QueryParameters)
+                        .OrderBy(kvp => kvp.Value is NullableTypeSyntax);     // Nullable values have to trail the others
                     IEnumerable<KeyValuePair<string, string>> parametersDoc = parameters.Select(parameter =>
                     {
                         string name = parameter.Key;
-                        string paramType = template.Parameters.ContainsKey(name)
+                        string paramType = template.Parameters.Any(kvp => kvp.Key == name)
                             ? "route"
                             : "query";
-                        string doc = $"The value of the {paramType} parameter <c>{name}</c>";
+                        var doc = $"The value of the {paramType} parameter <c>{name}</c>";
 
                         return new KeyValuePair<string, string>(name, doc);
                     });
