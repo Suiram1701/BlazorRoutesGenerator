@@ -4,6 +4,13 @@
     <TargetFramework>net8.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+      
+      <BlazorRoutesGenerator_Namespace>SampleApp</BlazorRoutesGenerator_Namespace>
+      <BlazorRoutesGenerator_ClassName>Routes</BlazorRoutesGenerator_ClassName>
+      <BlazorRoutesGenerator_NameOverrides>
+          SampleApp.Components.Pages.Weather=WeatherForecast
+          SampleApp.Components.Pages.Something.Page=AnotherRenamedPage
+      </BlazorRoutesGenerator_NameOverrides>
   </PropertyGroup>
 
   <ItemGroup>
@@ -11,7 +18,9 @@
   </ItemGroup>
 	
   <ItemGroup>
-    <AdditionalFiles Include="BlazorRoutesGenerator.config.json" />
+      <CompilerVisibleProperty Include="BlazorRoutesGenerator_Namespace" />
+      <CompilerVisibleProperty Include="BlazorRoutesGenerator_ClassName" />
+      <CompilerVisibleProperty Include="BlazorRoutesGenerator_NameOverrides" />
   </ItemGroup>
 	
 </Project>

@@ -1,0 +1,7 @@
+<Project>
+    <ItemGroup>
+        <CompilerVisibleProperty Include="BlazorRoutesGenerator_Namespace" />
+        <CompilerVisibleProperty Include="BlazorRoutesGenerator_ClassName" />
+        <CompilerVisibleProperty Include="BlazorRoutesGenerator_NameOverrides" />
+    </ItemGroup>
+</Project>

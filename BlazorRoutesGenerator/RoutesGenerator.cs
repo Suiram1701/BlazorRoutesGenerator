@@ -5,7 +5,6 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Text;
-using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
@@ -21,12 +20,17 @@ namespace BlazorRoutesGenerator
     [Generator]
     public class RoutesGenerator : IIncrementalGenerator
     {
+        private const string _configPrefix = "build_property.BlazorRoutesGenerator";
         private const string _routeAttributeQualifier = "Microsoft.AspNetCore.Components.RouteAttribute";
         private const string _routeAttributeClassName = "RouteAttribute";
         private const string _queryAttributeClassName = "SupplyParameterFromQueryAttribute";
 
         public void Initialize(IncrementalGeneratorInitializationContext context)
         {
+            IncrementalValueProvider<GeneratorConfig> configProvider =
+                context.AnalyzerConfigOptionsProvider.Select(static (options, _) =>
+                    GeneratorConfig.LoadFromGlobalOptions(options.GlobalOptions, _configPrefix));
+            
             IncrementalValueProvider<ImmutableArray<(ClassDeclarationSyntax, ImmutableArray<string>)>> csFileProvider = context.SyntaxProvider.ForAttributeWithMetadataName(
                 fullyQualifiedMetadataName: _routeAttributeQualifier,
                 predicate: (node, _) => node is ClassDeclarationSyntax,
@@ -40,26 +44,13 @@ namespace BlazorRoutesGenerator
                 .Where(m => m.Item1 != null && m.Item2.Any())
                 .Collect();
 
-#pragma warning disable CS8619
-            IncrementalValueProvider<ImmutableArray<GeneratorConfig>> configProvider = context.AdditionalTextsProvider
-                .Where(file => file.Path.EndsWith("BlazorRoutesGenerator.config.json"))
-                .Select(ParseConfigurationForGeneration)
-                .Where(config => config is not null)
-                .Collect();
-#pragma warning restore CS8619
-
             var combinedProvider = csFileProvider.Combine(razorFileProvider);
             var resultProvider = context.CompilationProvider
                 .Combine(combinedProvider)
                 .Combine(configProvider);
             context.RegisterSourceOutput(resultProvider, (spc, source) =>
             {
-                GeneratorConfig? config = null;
-                ImmutableArray<GeneratorConfig> configs = source.Right;
-                if (configs.Length == 1)
-                {
-                    config = configs[0];
-                }
+                GeneratorConfig? config = source.Right;
 
                 ImmutableArray<(ClassDeclarationSyntax, ImmutableArray<string>)> pages = [.. source.Left.Right.Left, .. source.Left.Right.Right];
                 Execute(source.Left.Left, spc, config, pages);
@@ -125,24 +116,6 @@ namespace BlazorRoutesGenerator
             string filePath = file.Path.Substring(0, file.Path.LastIndexOf(".razor"));
             string pathWithoutDrive = filePath.Substring(filePath.IndexOf(Path.VolumeSeparatorChar) + 2);
             return pathWithoutDrive.Replace(Path.DirectorySeparatorChar, '.');
-        }
-
-        private static GeneratorConfig? ParseConfigurationForGeneration(AdditionalText file, CancellationToken ct)
-        {
-            string? fileContent = file.GetText(ct)?.ToString();
-            if (string.IsNullOrWhiteSpace(fileContent))
-            {
-                return null;
-            }
-
-            try
-            {
-                return JsonConvert.DeserializeObject<GeneratorConfig>(fileContent!);
-            }
-            catch
-            {
-                return null;
-            }
         }
 
         private static void Execute(Compilation compilation, SourceProductionContext context, GeneratorConfig? config, ImmutableArray<(ClassDeclarationSyntax, ImmutableArray<string>)> pages)
@@ -220,7 +193,7 @@ namespace BlazorRoutesGenerator
                 .Select(kv =>
                 {
                     string name = kv.Key;
-                    if (config?.OverwriteNames.TryGetValue(kv.Key, out string newName) ?? false
+                    if (config?.OverrideNames.TryGetValue(kv.Key, out string newName) ?? false
                         && !pageModels.ContainsKey(newName))
                     {
                         name = newName;
